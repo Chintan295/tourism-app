@@ -1,51 +1,75 @@
-import React from 'react'
-import axios from 'axios'
-import {Redirect, Link} from 'react-router-dom'
-import {setCookie, getCookie} from './utils'
+import React, { Component } from 'react';
+import { Route, Redirect } from 'react-router-dom';
+import './style.css';
+import Footer from './Footer';
+import axios from 'axios';
+import { showAlert, getCookie, setCookie } from './utils';
+import Header from './Header';
 
-class Login extends React.Component{
-    constructor(){
-        super()
+class Login extends Component {
+
+    constructor(props) {
+        super(props);
         this.state = {
-            email : null,
-            pass : null,
-            token : getCookie('jwt')
+            email: '',
+            password: '',
+            loggedIn:(getCookie('jwt')!='')
         }
+        this.setemail = this.setemail.bind(this);
+        this.setpassword = this.setpassword.bind(this);
     }
-    handle = (event)=>{
-        event.persist();
-        const field = event.target.name;
-        if(field==='email')
-            this.setState({ email:event.target.value })
-        else if(field==='pass')
-            this.setState({ pass:event.target.value })
+    setpassword = (e) => {
+        e.persist();
+        this.setState({ password: e.target.value });
     }
-    login = ()=>{
+    setemail = (e) => {
+        e.persist();
+        this.setState({ email: e.target.value });
+    }
+    login = () =>{
         const data = {
-            'email' :this.state.email,
-            'password' : this.state.pass
+            email:this.state.email,
+            password:this.state.password
         }
         axios.post(`http://localhost:5000/api/user/login`,
-            data,
-            {headers:{'Content-Type': 'application/json','Accept': 'application/json'}
+                    data,
+                    {headers:{'Content-Type': 'application/json',
+                              'Accept': 'application/json'}
         })
-        .then(res =>{
-            setCookie('jwt',res.data.token,10*24*60*60);
-            this.setState({token: res.data.token});
+        .then(res => {
+            setCookie('jwt',res.data.token,10*24*3600);
+            this.setState({loggedIn:true});
         })
-        .catch((err) =>{
-            console.log(err);
-        })
+        .catch(function (error) {
+            showAlert('error',error.message);
+        });
     }
-    render(){
-        if(this.state.token!=='')
-            return <Redirect to='/home'/>
-        return <div>
-            Email :<input type='text' name='email' onChange={this.handle}></input><br/>
-            Password : <input type='password' name='pass' onChange={this.handle}></input><br/>
-            <button onClick={this.login}>Log in</button>
-        </div>
+    render() {
+        if(this.state.loggedIn)
+            return <Redirect to='/home'></Redirect>
+        return (<div>
+            <Header></Header>
+            <main class="main">
+                <div class="login-form">
+                    <h2 class="heading-secondary ma-bt-lg">Log into your account</h2>
+                    <div class="form form--login">
+                        <div class="form__group">
+                            <label class="form__label" for="email">Email address</label>
+                            <input class="form__input" id="email" type="email" onChange={this.setemail} placeholder="you@example.com" required />
+                        </div>
+                        <div class="form__group ma-bt-md">
+                            <label class="form__label" for="password">Password</label>
+                            <input class="form__input" id="password" type="password" onChange={this.setpassword} placeholder="••••••••" required minlength="8" />
+                        </div>
+                        <div class="form__group">
+                            <button class="btn btn--green" onClick={this.login}>Login</button>
+                        </div>
+                        <a class="password_reset" href="/forgetPassword">Forget Password?</a>
+                    </div>
+                </div>
+            </main>
+            <Footer></Footer>
+        </div>);
     }
 }
-
 export default Login;
